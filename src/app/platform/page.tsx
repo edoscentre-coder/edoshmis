@@ -5,6 +5,8 @@ import { Building2, Hospital } from "lucide-react";
 import { Wordmark } from "@/components/brand/logo";
 import { Card, CardBody, CardHeader, EmptyState, Field, Input, Select } from "@/components/ui/primitives";
 import { ActionForm } from "@/components/ui/action-form";
+import { NameAndCode } from "@/components/forms/name-and-code";
+import { KENYA_COUNTIES } from "@/lib/kenya";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { fmtDate } from "@/lib/format";
@@ -81,14 +83,7 @@ export default async function PlatformPage() {
               <Field label="Organisation name" required>
                 <Input name="name" required placeholder="e.g. Mfano Hospital Group" />
               </Field>
-              <div className="grid grid-cols-[1fr_96px] gap-3">
-                <Field label="First facility" required>
-                  <Input name="facility_name" required placeholder="Mfano Main Hospital" />
-                </Field>
-                <Field label="Code" required hint="2–8 letters">
-                  <Input name="facility_code" required pattern="[A-Za-z0-9]{2,8}" placeholder="MMH" className="uppercase" />
-                </Field>
-              </div>
+              <NameAndCode nameField="facility_name" codeField="facility_code" nameLabel="First facility" placeholder="Mfano Main Hospital" codeHint="Starts every hospital and admission number" />
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Level">
                   <Select name="level" defaultValue="other">
@@ -104,7 +99,12 @@ export default async function PlatformPage() {
                 </Field>
               </div>
               <Field label="County">
-                <Input name="county" />
+                <Select name="county" defaultValue="">
+                  <option value="">Choose county</option>
+                  {KENYA_COUNTIES.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </Select>
               </Field>
               <hr className="border-line" />
               <Field label="Administrator's name" required>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BedDouble, Building2, Layers, Plus } from "lucide-react";
 import { Badge, Card, CardBody, CardHeader, Disclosure, EmptyState, Field, Input, PageHeader, Select } from "@/components/ui/primitives";
 import { ActionForm } from "@/components/ui/action-form";
+import { NameAndCode } from "@/components/forms/name-and-code";
 import { can, requireStaff } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { KENYA_COUNTIES } from "@/lib/kenya";
@@ -338,12 +339,9 @@ function FacilityForm({ id, f }: { id: string | null; f?: Record<string, string 
   return (
     <ActionForm action={saveFacility.bind(null, id)} submitLabel={id ? "Save" : "Add facility"} resetOnSuccess={!id}>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Name" required>
-          <Input name="name" required defaultValue={f?.name ?? ""} />
-        </Field>
-        <Field label="Code" required hint="Prefix of hospital and admission numbers">
-          <Input name="code" required defaultValue={f?.code ?? ""} className="uppercase" />
-        </Field>
+        <div className="sm:col-span-2">
+          <NameAndCode nameLabel="Name" defaultName={f?.name ?? ""} defaultCode={f?.code ?? ""} codeHint="Prefix of hospital and admission numbers" />
+        </div>
         <Field label="Level">
           <Select name="level" defaultValue={f?.level ?? "other"}>
             {LEVELS.map((l) => (
