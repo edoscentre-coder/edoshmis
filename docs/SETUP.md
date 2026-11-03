@@ -2,21 +2,24 @@
 
 ## 1. Apply the database migrations
 
-In the Supabase dashboard for **edos_db** (`kqpltwrhzbjfyxkttwzh`), go to **SQL editor**. Paste and run each file in `supabase/migrations`, **in order**:
+**Automatically (recommended).** Add the database connection string to `.env.local`: Supabase dashboard → Project Settings → Database → Connection string (Session pooler), with the database password filled in.
 
 ```
-0001_edoshmis_foundation.sql
-0002_edoshmis_patients.sql
-0003_edoshmis_ipd_admissions.sql
-0004_edoshmis_clinical_documentation.sql
-0005_edoshmis_medication.sql
-0006_edoshmis_billing.sql
-0007_edoshmis_discharge.sql
-0008_edoshmis_staff_and_dashboard.sql
-0009_edoshmis_grants.sql
+DATABASE_URL=postgresql://postgres.kqpltwrhzbjfyxkttwzh:YOUR-PASSWORD@aws-0-eu-west-1.pooler.supabase.com:5432/postgres
 ```
 
-These files only create `edoshmis_*` objects. They drop nothing and alter nothing that belongs to another product. Each can be run again safely.
+Then run:
+
+```
+npm run migrate -- --dry   # see what will run
+npm run migrate            # apply it
+```
+
+The runner applies each file in its own transaction; a file that fails is rolled back completely. It records what it applied in `edoshmis_schema_migrations`, so later runs only apply new files. `0099_edoshmis_grants.sql` re-runs every time and always last.
+
+**By hand.** In the Supabase SQL editor, paste and run each file in `supabase/migrations` in number order, with nothing highlighted. Finish with `0099_edoshmis_grants.sql`, and run it again after any new migration.
+
+Every file only creates `edoshmis_*` objects and is safe to run twice.
 
 ## 2. Make yourself the EDOS Centre platform admin
 
@@ -28,7 +31,9 @@ select id from auth.users where lower(email) = lower('you@example.com')
 on conflict do nothing;
 ```
 
-If that email has no login in `edos_db` yet, create one first: Supabase dashboard → Authentication → Add user.
+If that email has no login in `edos_db` yet, create one first: Supabase dashboard → Authentication → Add user, with **Auto Confirm User** ticked.
+
+**Signing in.** Logins in `edos_db` are shared by every EDOS app on that project. Use that email and its password at `/login`. If you never set a password, or the user shows as *Waiting for verification*, go to Supabase dashboard → Authentication → Users → the user → **Send password recovery**, or delete the user and re-add it with a password and Auto Confirm.
 
 ## 3. Run the app
 
