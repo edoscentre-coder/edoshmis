@@ -8,6 +8,7 @@ import {
   BedDouble,
   Bell,
   Boxes,
+  Scissors,
   CalendarDays,
   FlaskConical,
   ScanLine,
@@ -54,6 +55,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   imaging: ScanLine,
   calendar: CalendarDays,
   stores: Boxes,
+  theatre: Scissors,
 };
 
 export interface Alert {
