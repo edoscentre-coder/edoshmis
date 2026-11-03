@@ -7,6 +7,11 @@ import {
   Activity,
   BedDouble,
   Bell,
+  CalendarDays,
+  FlaskConical,
+  ScanLine,
+  Siren,
+  Stethoscope as StethoscopeIcon,
   Building2,
   ChevronsLeft,
   ChevronsRight,
@@ -42,6 +47,11 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   tariffs: ReceiptText,
   clinical: Settings2,
   audit: FileClock,
+  opd: StethoscopeIcon,
+  emergency: Siren,
+  lab: FlaskConical,
+  imaging: ScanLine,
+  calendar: CalendarDays,
 };
 
 export interface Alert {

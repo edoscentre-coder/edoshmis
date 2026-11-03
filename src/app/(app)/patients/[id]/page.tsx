@@ -7,8 +7,11 @@ import { Badge, Card, CardBody, CardHeader, Disclosure, Fact, Field, Input, Page
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { can, requireStaff } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { ageOf, fmtDate, fmtDateTime, fullName, lengthOfStay, titleCase } from "@/lib/format";
+import { ageOf, fmtDate, fmtDateTime, fullName, lengthOfStay, titleCase, todayNairobi } from "@/lib/format";
 import { addAlert, addAllergy, addCoverage, addHistory, markNoKnownAllergies, requestAdmission, resolveAlert, setAllergyStatus } from "../actions";
+import { bookAppointment, checkIn } from "../../opd/actions";
+import { TRIAGE } from "@/components/opd/queue-board";
+import { nairobiLocalInput } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Patient" };
 
@@ -57,6 +60,12 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
   ]);
 
   const current = admissions?.data?.find((a) => a.status === "active" || a.status === "discharge_in_progress");
+  const [openVisit, depts, clinicians, upcoming] = await Promise.all([
+    can(s, "opd.read") ? supabase.from("edoshmis_encounters").select("id, kind, encounter_number, stage").eq("patient_id", id).eq("facility_id", s.facility.id).eq("status", "open").in("kind", ["opd", "emergency"]).maybeSingle() : null,
+    can(s, "opd.register") ? supabase.from("edoshmis_departments").select("id, name").eq("facility_id", s.facility.id).eq("is_active", true).order("name") : null,
+    can(s, "opd.register") ? supabase.from("edoshmis_staff").select("id, full_name, designation").eq("organization_id", s.staff.organizationId).eq("status", "active").in("designation", ["consultant", "medical_officer", "clinical_officer", "paediatrician"]).order("full_name") : null,
+    can(s, "opd.read") ? supabase.from("edoshmis_appointments").select("id, scheduled_at, status, reason").eq("patient_id", id).eq("status", "booked").gte("scheduled_at", todayNairobi()).order("scheduled_at").limit(5) : null,
+  ]);
   const openRequest = requests?.data?.[0];
   const allergyList = allergies?.data ?? [];
 
@@ -260,6 +269,119 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
         </div>
 
         <div className="flex min-w-0 flex-col gap-5">
+          {can(s, "opd.read") && !current && !p.is_deceased && (
+            <Card>
+              <CardHeader title="Visit" icon={Stethoscope} />
+              <CardBody className="flex flex-col gap-3">
+                {openVisit?.data ? (
+                  <Link href={`/visits/${openVisit.data.id}`} className="rounded-lg border border-brand/30 bg-brand-tint px-3 py-2 text-sm font-medium text-brand-darker">
+                    Open {openVisit.data.kind === "emergency" ? "emergency" : "outpatient"} visit {openVisit.data.encounter_number} — {titleCase(openVisit.data.stage)}
+                  </Link>
+                ) : (
+                  can(s, "opd.register") && (
+                    <Disclosure label="Check in" variant="primary" size="md">
+                      <ActionForm action={checkIn.bind(null, id)} submitLabel="Check in">
+                        <div className="grid grid-cols-2 gap-3">
+                          <Field label="Visit">
+                            <Select name="kind" defaultValue="opd">
+                              <option value="opd">Outpatient</option>
+                              <option value="emergency">Emergency</option>
+                            </Select>
+                          </Field>
+                          <Field label="Payment">
+                            <Select name="payment_category" defaultValue={coverage.data?.some((c) => c.payer_type === "sha") ? "sha" : "cash"}>
+                              <option value="cash">Cash / M-Pesa</option>
+                              <option value="sha">SHA</option>
+                              <option value="insurance">Insurance</option>
+                              <option value="corporate">Corporate</option>
+                              <option value="waiver">Waiver</option>
+                            </Select>
+                          </Field>
+                          <Field label="Clinic / department">
+                            <Select name="department_id" defaultValue="">
+                              <option value="">General</option>
+                              {depts?.data?.map((d) => (
+                                <option key={d.id} value={d.id}>
+                                  {d.name}
+                                </option>
+                              ))}
+                            </Select>
+                          </Field>
+                          <Field label="Emergency triage" hint="If assessed at the door">
+                            <Select name="triage_category" defaultValue="">
+                              <option value="">—</option>
+                              {Object.entries(TRIAGE).map(([k, t]) => (
+                                <option key={k} value={k}>
+                                  {t.label}
+                                </option>
+                              ))}
+                            </Select>
+                          </Field>
+                        </div>
+                        <Field label="Complaint">
+                          <Input name="chief_complaint" />
+                        </Field>
+                        <Field label="Arrived by" hint="Emergency only">
+                          <Select name="arrival_mode" defaultValue="">
+                            <option value="">—</option>
+                            <option value="walk_in">Walked in</option>
+                            <option value="ambulance">Ambulance</option>
+                            <option value="private_vehicle">Private vehicle</option>
+                            <option value="police">Police</option>
+                            <option value="referral">Referral</option>
+                          </Select>
+                        </Field>
+                      </ActionForm>
+                    </Disclosure>
+                  )
+                )}
+                {upcoming?.data && upcoming.data.length > 0 && (
+                  <ul className="text-sm">
+                    {upcoming.data.map((a) => (
+                      <li key={a.id} className="text-ink-soft">
+                        Appointment {fmtDateTime(a.scheduled_at)}
+                        {a.reason ? ` — ${a.reason}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {can(s, "opd.register") && (
+                  <Disclosure label="Book appointment">
+                    <ActionForm action={bookAppointment.bind(null, id)} submitLabel="Book">
+                      <Field label="When" required>
+                        <Input name="scheduled_at" type="datetime-local" required defaultValue={nairobiLocalInput()} />
+                      </Field>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="Clinic">
+                          <Select name="department_id" defaultValue="">
+                            <option value="">General</option>
+                            {depts?.data?.map((d) => (
+                              <option key={d.id} value={d.id}>
+                                {d.name}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                        <Field label="With">
+                          <Select name="clinician_id" defaultValue="">
+                            <option value="">Any clinician</option>
+                            {clinicians?.data?.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.full_name}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      </div>
+                      <Field label="Reason">
+                        <Input name="reason" />
+                      </Field>
+                    </ActionForm>
+                  </Disclosure>
+                )}
+              </CardBody>
+            </Card>
+          )}
           {can(s, "ipd.request_admission") && !current && !p.is_deceased && (
             <Card>
               <CardHeader title="Admit" icon={BedDouble} />

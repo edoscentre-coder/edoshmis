@@ -20,6 +20,7 @@ import { ProceduresTab } from "./tabs/procedures";
 import { BillingTab } from "./tabs/billing";
 import { DischargeTab } from "./tabs/discharge";
 import { HistoryTab } from "./tabs/history";
+import { Investigations } from "@/components/clinical/investigations";
 
 export const metadata: Metadata = { title: "Inpatient" };
 
@@ -31,6 +32,7 @@ const TABS = [
   { key: "diagnosis", label: "Diagnosis" },
   { key: "meds", label: "Medication · eMAR" },
   { key: "fluids", label: "Fluid balance" },
+  { key: "investigations", label: "Investigations" },
   { key: "procedures", label: "Procedures" },
   { key: "billing", label: "Billing" },
   { key: "discharge", label: "Discharge" },
@@ -186,6 +188,7 @@ export default async function AdmissionWorkspace({ params, searchParams }: { par
           {tab === "diagnosis" && <DiagnosisTab ctx={ctx} />}
           {tab === "meds" && <MedicationTab ctx={ctx} />}
           {tab === "fluids" && <FluidsTab ctx={ctx} />}
+          {tab === "investigations" && <Investigations s={s} admissionId={a.id} patientSex={p.sex} open={open} />}
           {tab === "procedures" && <ProceduresTab ctx={ctx} />}
           {tab === "billing" && <BillingTab ctx={ctx} />}
           {tab === "discharge" && <DischargeTab ctx={ctx} />}

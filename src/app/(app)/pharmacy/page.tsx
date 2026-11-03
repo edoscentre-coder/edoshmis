@@ -7,6 +7,7 @@ import { can, requireStaff } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { fmtDateTime, fullName } from "@/lib/format";
 import { dispense, verifyOrder } from "./actions";
+import { dispenseOutpatient } from "../opd/actions";
 
 export const metadata: Metadata = { title: "Pharmacy" };
 
@@ -48,10 +49,21 @@ export default async function PharmacyPage() {
     supabase.from("edoshmis_medication_orders").select(cols).eq("facility_id", s.facility.id).eq("status", "prescribed").order("prescribed_at"),
     supabase.from("edoshmis_medication_orders").select(cols).eq("facility_id", s.facility.id).eq("status", "verified").order("prescribed_at", { ascending: false }).limit(100),
   ]);
+  const { data: opRx } = await supabase
+    .from("edoshmis_outpatient_prescriptions")
+    .select("id, patient_id, encounter_id, drug_name, dose, dose_unit, route, frequency, duration_days, quantity, instructions, allergy_override_reason, prescribed_at, prescriber:edoshmis_staff!edoshmis_outpatient_prescriptions_prescribed_by_fkey(full_name), edoshmis_patients(first_name, middle_name, last_name, hospital_number)")
+    .eq("facility_id", s.facility.id)
+    .eq("status", "prescribed")
+    .order("prescribed_at");
+  const outpatient = (opRx ?? []) as unknown as {
+    id: string; patient_id: string; encounter_id: string; drug_name: string; dose: number; dose_unit: string; route: string; frequency: string; duration_days: number | null; quantity: number;
+    instructions: string | null; allergy_override_reason: string | null; prescribed_at: string; prescriber: { full_name: string } | null;
+    edoshmis_patients: { first_name: string; middle_name: string | null; last_name: string; hospital_number: string } | null;
+  }[];
   const queue = (toVerify ?? []) as unknown as Order[];
   const issue = (verified ?? []) as unknown as Order[];
 
-  const patientIds = [...new Set([...queue, ...issue].map((o) => o.patient_id))];
+  const patientIds = [...new Set([...queue, ...issue, ...outpatient].map((o) => o.patient_id))];
   const { data: allergies } = patientIds.length
     ? await supabase.from("edoshmis_patient_allergies").select("patient_id, substance, severity").in("patient_id", patientIds).eq("status", "active")
     : { data: [] };
@@ -84,7 +96,57 @@ export default async function PharmacyPage() {
 
   return (
     <>
-      <PageHeader title="Pharmacy" description="Inpatient prescriptions: verify, then issue." />
+      <PageHeader title="Pharmacy" description="Inpatient prescriptions to verify and issue, and outpatient prescriptions to dispense." />
+      <Card className="mb-5">
+        <CardHeader title={`Outpatient prescriptions · ${outpatient.length}`} icon={Pill} />
+        {outpatient.length === 0 ? (
+          <EmptyState icon={Pill} title="No outpatient prescriptions waiting" />
+        ) : (
+          <ul className="divide-y divide-line">
+            {outpatient.map((r) => (
+              <li key={r.id} className="flex flex-col gap-2 px-4 py-3 text-sm sm:px-5">
+                <div>
+                  <p className="font-medium">
+                    {r.drug_name}{" "}
+                    <span className="font-normal text-ink-soft">
+                      {Number(r.dose)} {r.dose_unit} · {r.route.toUpperCase()} · {r.frequency.toUpperCase()}
+                      {r.duration_days ? ` × ${r.duration_days} d` : ""} · qty {Number(r.quantity)}
+                    </span>
+                  </p>
+                  {r.instructions && <p className="text-xs text-ink-soft">{r.instructions}</p>}
+                  <p className="text-xs text-ink-faint">
+                    <Link href={`/visits/${r.encounter_id}`} className="text-brand hover:underline">
+                      {r.edoshmis_patients ? fullName(r.edoshmis_patients) : "Patient"}
+                    </Link>{" "}
+                    · {r.edoshmis_patients?.hospital_number} · {r.prescriber?.full_name}, {fmtDateTime(r.prescribed_at)}
+                  </p>
+                  {allergyBy.get(r.patient_id) && (
+                    <p className="mt-1 flex items-center gap-1 text-xs font-medium text-critical-ink">
+                      <AlertTriangle className="h-3 w-3" aria-hidden="true" /> Allergies: {allergyBy.get(r.patient_id)!.join(", ")}
+                    </p>
+                  )}
+                  {r.allergy_override_reason && <p className="mt-1 text-xs text-attention-ink">Prescriber overrode an allergy warning: {r.allergy_override_reason}</p>}
+                </div>
+                <Disclosure label="Dispense" variant="primary">
+                  <ActionForm action={dispenseOutpatient.bind(null, r.id)} submitLabel="Dispensed">
+                    <div className="grid grid-cols-3 gap-3">
+                      <Field label="Quantity">
+                        <Input name="quantity" inputMode="decimal" defaultValue={String(Number(r.quantity))} />
+                      </Field>
+                      <Field label="Batch">
+                        <Input name="batch_number" />
+                      </Field>
+                      <Field label="Expiry">
+                        <Input name="expiry_date" type="date" />
+                      </Field>
+                    </div>
+                  </ActionForm>
+                </Disclosure>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
       <div className="grid gap-5 xl:grid-cols-2">
         <Card>
           <CardHeader title={`To verify · ${queue.length}`} icon={Pill} />

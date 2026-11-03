@@ -1,10 +1,10 @@
--- EDOSHMIS 0009 — least privilege on grants.
+-- EDOSHMIS 0099 — least privilege on grants. Always run LAST (after every other migration, including ones added later).
 --
 -- Supabase's default privileges give anon and authenticated everything on
 -- new objects in public. RLS already returns nothing to anon, but EDOSHMIS
 -- has no public pages at all, so the signed-out role gets nothing: no table,
 -- no view, no function. Signed-in users keep what RLS and the functions'
--- own checks allow. Run after 0001–0008; safe to run again.
+-- own checks allow. Safe to run again — re-run it after applying any new migration.
 
 do $$
 declare r record;
