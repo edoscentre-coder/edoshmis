@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ *
+ * EDOSHMIS design tokens
+ *
+ * Deep navy shell, healthcare blue as the one primary colour, and the
+ * clinical states each given a single job: teal/green is "fine", amber is
+ * "look at this", red is "act now" — never decoration, never a button
+ * colour, so a red mark on a busy ward screen always means something.
+ * ------------------------------------------------------------------ */
+
+@theme {
+  --color-canvas: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-surface-sunk: #eef2f6;
+  --color-ink: #0f1b2d;
+  --color-ink-soft: #4a5a70;
+  --color-ink-faint: #8794a8;
+  --color-line: #e3e8ef;
+  --color-line-strong: #cdd5e0;
+
+  /* Primary — healthcare blue */
+  --color-brand: #1a5fb4;
+  --color-brand-dark: #144c91;
+  --color-brand-darker: #0f3a70;
+  --color-brand-soft: #e3edf9;
+  --color-brand-tint: #f1f6fd;
+
+  /* Shell — deep navy */
+  --color-shell: #0b1f3a;
+  --color-shell-raised: #13305a;
+  --color-shell-ink: #c5d3e8;
+  --color-shell-ink-faint: #7f93b2;
+
+  /* Clinical states */
+  --color-positive: #0f9d8a;
+  --color-positive-soft: #dcf5f0;
+  --color-positive-ink: #0b5c52;
+  --color-attention: #d97706;
+  --color-attention-soft: #fef3c7;
+  --color-attention-ink: #7a3e06;
+  --color-critical: #d42a2a;
+  --color-critical-soft: #fde4e4;
+  --color-critical-ink: #861b1b;
+  --color-info: #4f6bed;
+  --color-info-soft: #e6eafd;
+  --color-info-ink: #29399a;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  --shadow-card: 0 1px 2px rgb(15 27 45 / 0.04), 0 1px 3px rgb(15 27 45 / 0.06);
+  --shadow-raised: 0 6px 16px rgb(15 27 45 / 0.08), 0 16px 40px -16px rgb(15 27 45 / 0.2);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Tabular figures wherever numbers line up: observations, money, beds. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Disclosure panels: the inline forms open in place, no modal stack. */
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}
