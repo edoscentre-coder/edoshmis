@@ -32,7 +32,8 @@ describe("demo data", () => {
     expect(pats.map((p) => p.first_name)).toEqual(["Amina", "Brian", "Grace"]);
     expect(pats[0].hospital_number).toMatch(/^EDO-\d{6}$/);
 
-    const state = async (sql: string) => (await db.query(sql)).rows;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const state = async (sql: string) => (await db.query<Record<string, any>>(sql)).rows;
     // Amina: outpatient, closed with follow-up, lab validated, both prescriptions dispensed, bill paid.
     expect(await state("select e.status, e.outcome from edoshmis_encounters e join edoshmis_patients p on p.id = e.patient_id where p.first_name = 'Amina'")).toEqual([{ status: "closed", outcome: "follow_up" }]);
     expect(await state("select b.balance::text from edoshmis_account_balances b join edoshmis_patients p on p.id = b.patient_id where p.first_name = 'Amina'")).toEqual([{ balance: "0.00" }]);

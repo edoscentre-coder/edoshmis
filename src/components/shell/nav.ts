@@ -3,7 +3,7 @@ import type { Perm } from "@/lib/perms";
 /** Icon names resolved in the client shell (lucide components cannot cross to the client as props). */
 export type NavIcon =
   | "dashboard" | "patients" | "census" | "admissions" | "beds" | "pharmacy" | "billing"
-  | "facility" | "staff" | "tariffs" | "clinical" | "audit" | "opd" | "emergency" | "lab" | "imaging" | "calendar";
+  | "facility" | "staff" | "tariffs" | "clinical" | "audit" | "opd" | "emergency" | "lab" | "imaging" | "calendar" | "stores";
 
 export interface NavItem {
   href: string;
@@ -51,6 +51,7 @@ const GROUPS: { title: string; items: Def[] }[] = [
       { href: "/lab", label: "Laboratory", icon: "lab", any: ["lab.process", "lab.validate", "lab.collect"] },
       { href: "/imaging", label: "Imaging", icon: "imaging", any: ["imaging.perform", "imaging.report"] },
       { href: "/pharmacy", label: "Pharmacy", icon: "pharmacy", any: ["meds.verify"] },
+      { href: "/stores", label: "Stores", icon: "stores", any: ["stores.read", "procurement.order", "stores.requisition"] },
       { href: "/billing", label: "Billing", icon: "billing", any: ["billing.read"] },
     ],
   },

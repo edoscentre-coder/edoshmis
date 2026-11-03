@@ -15,6 +15,8 @@ export const PERMS = [
   "lab.read", "lab.order", "lab.collect", "lab.process", "lab.validate", "lab.configure",
   // 0012 imaging
   "imaging.read", "imaging.order", "imaging.perform", "imaging.report", "imaging.validate", "imaging.configure",
+  // 0013 stores & procurement
+  "stores.read", "stores.receive", "stores.issue", "stores.adjust", "stores.requisition", "stores.configure", "procurement.order", "procurement.approve",
 ] as const;
 
 export type Perm = (typeof PERMS)[number];
